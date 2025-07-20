@@ -1,0 +1,169 @@
+// app/Splash.js
+import React, { useEffect, useRef, useContext } from 'react';
+import {
+  View,
+  ActivityIndicator,
+  Animated,
+  Image,
+  StyleSheet,
+  Platform,
+  Dimensions,
+  Easing,
+} from 'react-native';
+import { useNavigation } from '@react-navigation/native';  // <-- React Navigation
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import api from '../src/api';
+import { ACCESS_TOKEN } from '../src/constant';
+import DataContext from '..//DataContext';
+
+const { width, height } = Dimensions.get('window');
+const shuffleArray = arr => {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+};
+
+export default function Splash() {
+  const navigation = useNavigation();   // <-- React Navigation hook
+  const { setData } = useContext(DataContext);
+
+  // Animation refs
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.8)).current;
+  const textFade = useRef(new Animated.Value(0)).current;
+  const textPos = useRef(new Animated.Value(30)).current;
+  const glowAnim = useRef(new Animated.Value(0)).current;
+
+  // Play animations
+  useEffect(() => {
+    Animated.sequence([
+      Animated.parallel([
+        Animated.timing(fadeAnim, { toValue: 1, duration: 1200, useNativeDriver: true }),
+        Animated.spring(scaleAnim, { toValue: 1, friction: 4, useNativeDriver: true }),
+        Animated.timing(glowAnim, {
+          toValue: 1,
+          duration: 1800,
+          easing: Easing.linear,
+          useNativeDriver: false,
+        }),
+      ]),
+      Animated.parallel([
+        Animated.timing(textFade, { toValue: 1, duration: 800, useNativeDriver: true }),
+        Animated.spring(textPos, { toValue: 0, speed: 12, bounciness: 8, useNativeDriver: true }),
+      ]),
+    ]).start();
+  }, []);
+
+  // Load data & then navigate
+  useEffect(() => {
+    (async () => {
+      let username = '';
+      const favoritesMap = {};
+
+      try {
+        const token = await AsyncStorage.getItem(ACCESS_TOKEN);
+        if (token) {
+          const { data: u } = await api.get('core/user/me/');
+          username = u.username;
+        }
+        const { data: props } = await api.get('main/properties/');
+        const verified = props.filter(p => p.is_verified);
+        const explore = shuffleArray(verified);
+        const typeTabs = Array.from(new Set(verified.flatMap(p => [p.type, p.property_type])));
+
+        if (token) {
+          await Promise.all(
+            verified.map(async p => {
+              try {
+                const { data: favs } = await api.get(`main/properties/${p.id}/favorites/`);
+                const liked = favs.length > 0;
+                favoritesMap[p.id] = { liked, favId: liked ? favs[0].id : null };
+              } catch {
+                favoritesMap[p.id] = { liked: false, favId: null };
+              }
+            })
+          );
+        }
+
+        setData({ properties: verified, explore, typeTabs, username, favoritesMap });
+      } catch (e) {
+        console.warn('Splash loadData error', e);
+        setData({ properties: [], explore: [], typeTabs: [], username: '', favoritesMap: {} });
+      } finally {
+        // Navigate to Main in your React Navigation stack
+        navigation.replace('Main');
+      }
+    })();
+  }, [navigation, setData]);
+
+  const logoSize = Math.min(width * 0.35, 180);
+  const titleSize = Math.min(width * 0.08, 36);
+  const isSmall = height < 700;
+
+  return (
+    <View style={styles.container}>
+      <Animated.View
+        style={[
+          styles.glow,
+          {
+            opacity: glowAnim,
+            transform: [{ scale: glowAnim.interpolate({ inputRange: [0,1], outputRange: [0.8,1.2] }) }],
+          },
+        ]}
+      />
+      <Animated.View
+        style={[
+          styles.logoContainer,
+          { opacity: fadeAnim, transform: [{ scale: scaleAnim }], marginBottom: isSmall ? 15 : 25 },
+        ]}
+      >
+        <Image
+          source={require('../assets/images/casaz-logo.png')}
+          style={{ width: logoSize, height: logoSize }}
+          resizeMode="contain"
+        />
+      </Animated.View>
+      <Animated.Text
+        style={[
+          styles.title,
+          {
+            opacity: textFade,
+            transform: [{ translateY: textPos }],
+            fontSize: titleSize,
+            marginBottom: isSmall ? 20 : 35,
+          },
+        ]}
+      >
+        Find Your Perfect Home
+      </Animated.Text>
+      <ActivityIndicator size="large" color="#FFD700" style={styles.indicator} />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex:1, backgroundColor:'#0A0A0A', justifyContent:'center', alignItems:'center', padding:20 },
+  glow: {
+    position:'absolute', width:'70%', aspectRatio:1, borderRadius:200,
+    backgroundColor:'rgba(212,175,55,0.25)',
+    ...Platform.select({
+      ios:{ shadowColor:'#FFD700', shadowOffset:{width:0,height:0}, shadowOpacity:0.8, shadowRadius:40 },
+      android:{ elevation:30 },
+    }),
+  },
+  logoContainer: {
+    ...Platform.select({
+      ios:{ shadowColor:'#FFD700', shadowOffset:{width:0,height:0}, shadowOpacity:0.7, shadowRadius:15 },
+      android:{ elevation:20, overflow:'hidden', borderRadius:5 },
+    }),
+  },
+  title: {
+    color:'#FFD700', fontFamily:'LeckerliOne-Regular', textAlign:'center',
+    letterSpacing:1.5, textShadowColor:'rgba(255,215,0,0.4)',
+    textShadowOffset:{width:0,height:0}, textShadowRadius:10, paddingHorizontal:20,
+  },
+  indicator: { position:'absolute', bottom: height * 0.1 },
+});

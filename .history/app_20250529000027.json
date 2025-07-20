@@ -1,0 +1,43 @@
+{
+  "expo": {
+    "name": "Find Your Perfect Home." {
+      ''
+    },
+    "slug": "RealEstate",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/casaz-logo.png",
+    "scheme": "realestate",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "resizeMode": "cover",
+      "backgroundColor": "#1a1a2e"
+    },
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/casaz-logo.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/casaz-logo.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen"
+      ],
+      "expo-font"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

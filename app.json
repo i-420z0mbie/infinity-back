@@ -1,42 +1,55 @@
 {
   "expo": {
-    "name": "RealEstate",
+    "name": "Casaz",
     "slug": "RealEstate",
+    "jsEngine": "hermes",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/splashscreen_logo.png",
     "scheme": "realestate",
     "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/images/splashscreen_logo.png",
+      "resizeMode": "cover",
+      "backgroundColor": "#Ffffe4"
+    },
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true
     },
     "android": {
+      "package": "com.z0mbie.casaz",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/images/splashscreen_logo.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "INTERNET",
+        "ACCESS_NETWORK_STATE"
+      ]
     },
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/splashscreen_logo.png"
     },
     "plugins": [
       "expo-router",
       [
-        "expo-splash-screen",
-        {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
-        }
-      ]
+        "expo-splash-screen"
+      ],
+      "expo-font",
+      "react-native-edge-to-edge"
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "aed23258-b5c3-4ca0-b61b-5da61e347e5c"
+      }
     }
   }
 }
