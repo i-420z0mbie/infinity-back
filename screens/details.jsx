@@ -1,4 +1,3 @@
-// Details.js
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -7,8 +6,8 @@ import {
   ScrollView,
   Dimensions,
   Image,
-  ImageBackground, // Added missing import
-  Modal, // Added missing import
+  ImageBackground,
+  Modal,
   ActivityIndicator,
   Alert,
   TouchableOpacity,
@@ -75,9 +74,30 @@ export default function Details({ route }) {
   const [currentUserId, setCurrentUserId] = useState(null);
   const [promotedProperties, setPromotedProperties] = useState([]);
   const [currentPromoIndex, setCurrentPromoIndex] = useState(0);
+  const [bannerImages] = useState([
+    require('../assets/promo1.jpg'),
+    require('../assets/promo2.jpg'),
+    require('../assets/promo3.jpg'),
+  ]);
+  const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
 
   const scrollRef = useRef();
   const promoIntervalRef = useRef();
+  const bannerIntervalRef = useRef();
+
+  // Track property view
+  useEffect(() => {
+    const trackView = async () => {
+      try {
+        // make sure `id` is the UUID/string of the property
+        await api.post(`main/properties/${id}/visit/`);
+      } catch (error) {
+        console.error('Error tracking property view:', error);
+      }
+    };
+
+    trackView();
+  }, [id]);
 
   useEffect(() => {
     (async () => {
@@ -120,6 +140,15 @@ export default function Details({ route }) {
     
     return () => clearInterval(promoIntervalRef.current);
   }, [promotedProperties]);
+
+  // Set up banner rotation interval
+  useEffect(() => {
+    bannerIntervalRef.current = setInterval(() => {
+      setCurrentBannerIndex(prev => (prev + 1) % bannerImages.length);
+    }, 4000);
+    
+    return () => clearInterval(bannerIntervalRef.current);
+  }, []);
 
   if (loading || !property || !creatorData) {
     return (
@@ -215,6 +244,31 @@ export default function Details({ route }) {
       </Modal>
 
       <ScrollView contentContainerStyle={styles.scrollContainer}>
+        {/* Top Banner Carousel */}
+        <View style={styles.bannerContainer}>
+          <ImageBackground 
+            source={bannerImages[currentBannerIndex]}
+            style={styles.bannerImage}
+            resizeMode="cover"
+          >
+            <LinearGradient
+              colors={['rgba(0,0,0,0.3)', 'transparent']}
+              style={styles.bannerGradient}
+            />
+          </ImageBackground>
+          <View style={styles.bannerIndicators}>
+            {bannerImages.map((_, index) => (
+              <View
+                key={index}
+                style={[
+                  styles.bannerIndicator,
+                  index === currentBannerIndex && styles.activeBannerIndicator
+                ]}
+              />
+            ))}
+          </View>
+        </View>
+
         {/* Promoted Properties Banner */}
         {promotedProperties.length > 0 && (
           <View style={styles.promoBanner}>
@@ -323,7 +377,6 @@ export default function Details({ route }) {
               <Text style={styles.price}>
                 GH₵ {Number(property.price).toLocaleString()}
               </Text>
-              {/* FIX: Use dynamically calculated color */}
               <View style={[styles.typeBadge, { backgroundColor: typeColor }]}>
                 <Text style={styles.typeText}>{property.type.toUpperCase()}</Text>
               </View>
@@ -403,6 +456,61 @@ export default function Details({ route }) {
             </View>
           </View>
 
+          {/* Additional Property Details */}
+          <View style={styles.detailsGrid}>
+            <View style={styles.detailItem}>
+              <Ionicons name="resize-outline" size={20} color="#6C63FF" />
+              <Text style={styles.detailText}>
+                {property.square_meters ? `${property.square_meters} m²` : 'Size N/A'}
+              </Text>
+            </View>
+            <View style={styles.detailItem}>
+              <Ionicons name="car-sport-outline" size={20} color="#6C63FF" />
+              <Text style={styles.detailText}>
+                {property.parking_spaces > 0 ? `${property.parking_spaces} Parking` : 'No Parking'}
+              </Text>
+            </View>
+            <View style={styles.detailItem}>
+              <Ionicons name="construct-outline" size={20} color="#6C63FF" />
+              <Text style={styles.detailText}>
+                {property.condition === 'new' ? 'New' : 
+                 property.condition === 'good' ? 'Good Condition' : 'Needs Renovation'}
+              </Text>
+            </View>
+            <View style={styles.detailItem}>
+              <Ionicons name="calendar-outline" size={20} color="#6C63FF" />
+              <Text style={styles.detailText}>
+                {property.year_built ? `Built ${property.year_built}` : 'Year N/A'}
+              </Text>
+            </View>
+            {property.floor_number && (
+              <View style={styles.detailItem}>
+                <Ionicons name="layers-outline" size={20} color="#6C63FF" />
+                <Text style={styles.detailText}>
+                  Floor {property.floor_number}
+                </Text>
+              </View>
+            )}
+            {property.elevator && (
+              <View style={styles.detailItem}>
+                <Ionicons name="arrow-up-circle-outline" size={20} color="#6C63FF" />
+                <Text style={styles.detailText}>Elevator</Text>
+              </View>
+            )}
+            {property.wheelchair_access && (
+              <View style={styles.detailItem}>
+                <Ionicons name="accessibility-outline" size={20} color="#6C63FF" />
+                <Text style={styles.detailText}>Wheelchair Access</Text>
+              </View>
+            )}
+            {property.secure_parking && (
+              <View style={styles.detailItem}>
+                <Ionicons name="shield-checkmark-outline" size={20} color="#6C63FF" />
+                <Text style={styles.detailText}>Secure Parking</Text>
+              </View>
+            )}
+          </View>
+
           {/* Description */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Description</Text>
@@ -468,7 +576,7 @@ export default function Details({ route }) {
           </View>
 
           {/* Reviews */}
-          <View style={styles.section}>
+          {/* <View style={styles.section}>
             <Text style={styles.sectionTitle}>
               Verified Reviews ({property.reviews.length})
             </Text>
@@ -515,7 +623,7 @@ export default function Details({ route }) {
                 </Text>
               </View>
             )}
-          </View>
+          </View> */}
         </View>
       </ScrollView>
 
@@ -554,6 +662,51 @@ const styles = StyleSheet.create({
   fullscreenImage: { width, height: height * 0.8, alignSelf: 'center' },
   closeButton: { position: 'absolute', top: 50, right: 20, zIndex: 2, padding: 10 },
   scrollContainer: { paddingBottom: 90 },
+  
+  // Top Banner Styles
+  bannerContainer: {
+    height: 110,
+    backgroundColor: '#f0f0f0',
+    marginTop: 35, 
+    marginBottom: 10,
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginHorizontal: 15,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  bannerImage: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+  },
+  bannerGradient: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    height: '100%',
+  },
+  bannerIndicators: {
+    position: 'absolute',
+    bottom: 10,
+    alignSelf: 'center',
+    flexDirection: 'row',
+  },
+  bannerIndicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255,255,255,0.5)',
+    marginHorizontal: 4,
+  },
+  activeBannerIndicator: {
+    backgroundColor: '#6C63FF',
+    width: 16,
+  },
   
   // Promoted Properties Banner
   promoBanner: {
@@ -668,15 +821,15 @@ const styles = StyleSheet.create({
 
   content: { padding: 20 },
   header: { marginBottom: 24 },
-  title: { fontSize: 18, fontFamily: 'Poppins-ExtraBold', color: '#2A2A2A', marginBottom: 8 },
+  title: { fontSize: 21, fontFamily: 'Poppins-ExtraBold', color: '#2A2A2A', marginBottom: 8 },
   priceContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  price: { fontSize: 15, fontFamily: 'Poppins-Regular', color: '#6C63FF' },
+  price: { fontSize: 18, fontFamily: 'Poppins-ExtraBold', color: '#6C63FF' },
   typeBadge: { borderRadius: 8, paddingVertical: 6, paddingHorizontal: 12 },
-  typeText: { fontSize: 12, fontWeight: '700', color: '#FFFFFF' },
+  typeText: { fontSize: 10, fontWeight: '700', color: '#FFFFFF' },
   
   // Subscription Perks
   perksContainer: {
@@ -725,6 +878,33 @@ const styles = StyleSheet.create({
   statText: { fontSize: 12, fontWeight: '700', color: '#2A2A2A', marginTop: 8 },
   statLabel: { fontSize: 12, color: '#888', marginTop: 4 },
 
+  // Additional Details Grid
+  detailsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+    backgroundColor: '#FFF',
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: '#6C63FF',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  detailItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '48%',
+    marginBottom: 12,
+  },
+  detailText: {
+    fontSize: 12,
+    color: '#555',
+    marginLeft: 8,
+  },
+
   section: {
     marginBottom: 24,
     backgroundColor: '#FFF',
@@ -770,7 +950,7 @@ const styles = StyleSheet.create({
   city: { fontSize: 14, fontWeight: '600', color: '#2A2A2A' },
   address: { fontSize: 12, color: '#666', marginTop: 4 },
 
-  ownerCard: { borderRadius: 16, padding: 20, flexDirection: 'row', alignItems: 'center' },
+  ownerCard: { borderRadius: 16, padding: 20, flexDirection: 'row', alignItems: 'center', marginBottom: 30 },
   ownerAvatar: {
     backgroundColor: 'rgba(255,255,255,0.2)',
     borderRadius: 12,
@@ -785,31 +965,31 @@ const styles = StyleSheet.create({
   ownerMeta: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
   ownerDetail: { fontSize: 14, color: '#EEE', marginLeft: 8 },
 
-  reviewCard: {
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 30,
-    borderWidth: 1,
-    borderColor: '#EEE',
-  },
-  reviewHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  reviewerInfo: { flexDirection: 'row', alignItems: 'center' },
-  reviewerName: { fontSize: 12, fontWeight: '600', color: '#444', marginLeft: 8 },
-  ratingContainer: { alignItems: 'flex-end' },
-  ratingText: { fontSize: 12, color: '#888', marginBottom: 4 },
-  ratingStars: { flexDirection: 'row' },
-  reviewContent: { fontSize: 12, color: '#555', lineHeight: 22, marginBottom: 8 },
-  reviewDate: { fontSize: 10, color: '#888', textAlign: 'right' },
+  // reviewCard: {
+  //   backgroundColor: '#FFF',
+  //   borderRadius: 12,
+  //   padding: 16,
+  //   marginBottom: 30,
+  //   borderWidth: 1,
+  //   borderColor: '#EEE',
+  // },
+  // reviewHeader: {
+  //   flexDirection: 'row',
+  //   justifyContent: 'space-between',
+  //   alignItems: 'center',
+  //   marginBottom: 12,
+  // },
+  // reviewerInfo: { flexDirection: 'row', alignItems: 'center' },
+  // reviewerName: { fontSize: 12, fontWeight: '600', color: '#444', marginLeft: 8 },
+  // ratingContainer: { alignItems: 'flex-end' },
+  // ratingText: { fontSize: 12, color: '#888', marginBottom: 4 },
+  // ratingStars: { flexDirection: 'row' },
+  // reviewContent: { fontSize: 12, color: '#555', lineHeight: 22, marginBottom: 8 },
+  // reviewDate: { fontSize: 10, color: '#888', textAlign: 'right' },
 
-  noReviews: { alignItems: 'center', paddingVertical: 32 },
-  noReviewsText: { fontSize: 16, color: '#888', marginTop: 16, fontWeight: '500' },
-  noReviewsHint: { fontSize: 13, color: '#AAA', marginTop: 4, textAlign: 'center' },
+  // noReviews: { alignItems: 'center', paddingVertical: 32 },
+  // noReviewsText: { fontSize: 16, color: '#888', marginTop: 16, fontWeight: '500' },
+  // noReviewsHint: { fontSize: 13, color: '#AAA', marginTop: 4, textAlign: 'center' },
 
   footerGradient: { position: 'absolute', bottom: 80, left: 0, right: 0, height: 40 },
   footer: {

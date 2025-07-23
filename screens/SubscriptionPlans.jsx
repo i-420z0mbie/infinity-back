@@ -20,7 +20,12 @@ const { width } = Dimensions.get('window');
 const CARD_WIDTH = width * 0.9;
 
 export default function SubscriptionPlans({ route, navigation }) {
-  const { returnScreen, images, propertyId } = route.params; // Get propertyId from params
+  // Safely handle route.params with default values
+  const params = route.params || {};
+  const returnScreen = params.returnScreen || 'Main';
+  const images = params.images || [];
+  const propertyId = params.propertyId || null;
+
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedPlan, setSelectedPlan] = useState(null);
@@ -147,9 +152,9 @@ export default function SubscriptionPlans({ route, navigation }) {
       planId: item.id,
       promoCode: appliedPromo || null,
       amount: finalPrice,
-      returnScreen,  // Pass returnScreen
-      images,        // Pass images
-      propertyId    // Pass propertyId
+      returnScreen,
+      images,
+      propertyId
     });
   };
 
@@ -550,8 +555,9 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 20,
     marginTop: 15,
+    marginBottom: 50,
     borderWidth: 1,
-    borderColor: '#EDF0FF'
+    borderColor: 'red'
   },
   infoTitle: {
     fontSize: 18,

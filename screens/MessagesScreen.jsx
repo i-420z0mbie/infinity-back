@@ -224,40 +224,30 @@ export default function MessageListScreen() {
 
   return (
     <>
-      <StatusBar style="dark" />
+    <StatusBar style="dark" />
       <View style={styles.container}>
-        {threads.length > 0 ? (
-          <>
-            <Text style={styles.headerTitle}>Messages</Text>
-            <FlatList
-              data={threads}
-              keyExtractor={item => String(item.userId)}
-              renderItem={renderItem}
-              contentContainerStyle={styles.listContent}
-              showsVerticalScrollIndicator={false}
-            />
-          </>
-        ) : (
-          <View style={styles.emptyContainer}>
-            <Image
-              source={require('../assets/logo.png')}
-              style={styles.emptyLogo}
-            />
-            <Text style={styles.emptyText}>You have no messages</Text>
-          </View>
-        )}
+        <Text style={styles.headerTitle}>Messages</Text>
+        <FlatList
+          data={threads}
+          keyExtractor={item => String(item.userId)}
+          renderItem={renderItem}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+        />
       </View>
     </>
   );
 }
 
+// Keep the same styles as previous version
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    // backgroundColor: '#E6F0FA',
   },
   headerTitle: {
     fontSize: 28,
+    // fontWeight: '800',
     color: '#1e293b',
     paddingHorizontal: 24,
     paddingVertical: 12,
@@ -363,23 +353,5 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     marginBottom: 32,
-  },
-  // New styles for empty state
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingBottom: 100,
-  },
-  emptyLogo: {
-    width: 180,
-    height: 180,
-    marginBottom: 24,
-  },
-  emptyText: {
-    fontSize: 20,
-    fontFamily: 'LeckerliOne-Regular',
-    color: '#94a3b8',
-    textAlign: 'center',
   },
 });

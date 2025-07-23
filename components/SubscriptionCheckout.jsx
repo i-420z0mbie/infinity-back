@@ -41,7 +41,7 @@ export default function SubscriptionCheckout({ route, navigation }) {
         setPaymentReference(data.payment_ref || data.payment_reference);
         setPrice(data.amount);
       } catch (err) {
-        console.error('Subscription init error:', err.response?.data || err);
+        // console.error('Subscription init error:', err.response?.data || err);
         Alert.alert(
           'Payment Error', 
           err.response?.data?.detail || 'Could not start subscription payment.'

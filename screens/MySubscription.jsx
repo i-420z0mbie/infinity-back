@@ -47,7 +47,7 @@ export default function MySubscriptions({ navigation }) {
       if (err.response?.status === 204) {
         setSub(null);
       } else {
-        console.error('Fetch subscription error:', err);
+        // console.error('Fetch subscription error:', err);
         // Alert.alert('Error', 'Could not load subscription details.');
       }
     } finally {
@@ -146,7 +146,7 @@ export default function MySubscriptions({ navigation }) {
           
           <TouchableOpacity
             style={styles.homeButton}
-            onPress={() => navigation.navigate('Main')}
+            onPress={() => navigation.navigate('Home')}
           >
             <Text style={styles.homeButtonText}>Go to Home</Text>
           </TouchableOpacity>

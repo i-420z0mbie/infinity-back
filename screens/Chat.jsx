@@ -311,7 +311,6 @@ const styles = StyleSheet.create({
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 30,
     padding: 8,
     backgroundColor: '#fff',
     borderTopWidth: 1,

@@ -156,7 +156,6 @@ export default function RootLayout() {
               <Stack.Screen name="Details" component={Details} />
               <Stack.Screen name="SmallCard" component={SmallCard} />
               <Stack.Screen name="AddImages" component={AddImages} />
-              {/* <Stack.Screen name="PaystackPayment" component={PayStack} /> */}
               <Stack.Screen name="Chat" component={Chat} />
               <Stack.Screen name="PostAd" component={PostAd} />
               

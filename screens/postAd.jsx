@@ -23,30 +23,43 @@ export default function PostAd({ navigation }) {
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Form state (all strings)
+  // Form state
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [type, setType] = useState('rental');               // listing type (string)
+  const [type, setType] = useState('rental');
   const [price, setPrice] = useState('');
   const [bedrooms, setBedrooms] = useState('1');
   const [bathrooms, setBathrooms] = useState('1');
   const [propertyType, setPropertyType] = useState('apartment');
-  const [region, setRegion] = useState('');                 // region ID as string
-  const [city, setCity] = useState('');                     // city ID as string
-  const [status, setStatus] = useState('available');        // availability
-  const [featuresList, setFeaturesList] = useState([]);     // array of { id: number, name: { name: string } }
+  const [region, setRegion] = useState('');
+  const [city, setCity] = useState('');
+  const [status, setStatus] = useState('available');
+  const [featuresList, setFeaturesList] = useState([]);
   const [selectedFeatures, setSelectedFeatures] = useState([]);
+  
+  // New fields
+  const [condition, setCondition] = useState('good');
+  const [squareMeters, setSquareMeters] = useState('');
+  const [parkingSpaces, setParkingSpaces] = useState('0');
+  const [hasGarage, setHasGarage] = useState(false);
+  const [wheelchairAccess, setWheelchairAccess] = useState(false);
+  const [elevator, setElevator] = useState(false);
+  const [secureParking, setSecureParking] = useState(false);
+  const [floorNumber, setFloorNumber] = useState('');
+  const [yearBuilt, setYearBuilt] = useState('');
+  const [detailedAddress, setDetailedAddress] = useState('');
 
-  // Dropdown data from API
-  const [regions, setRegions] = useState([]); // e.g. [{ id: 1, name: "Greater Accra" }, ...]
-  const [cities, setCities] = useState([]);   // e.g. [{ id: 5, city: "Accra", region: { id: 1 } }, ...]
+  // Dropdown data
+  const [regions, setRegions] = useState([]);
+  const [cities, setCities] = useState([]);
 
-  // Choice arrays (static)
+  // Choice arrays
   const TYPE_CHOICES = [
     { value: 'rental', label: 'rental' },
     { value: 'short rental', label: 'short rental' },
     { value: 'sale', label: 'sale' },
   ];
+  
   const PROPERTY_TYPE_CHOICES = [
     'single room',
     'self contained',
@@ -59,7 +72,14 @@ export default function PostAd({ navigation }) {
     'commercial',
     'air-bnb'
   ];
+  
   const STATUS_CHOICES = ['available', 'not available'];
+  
+  const CONDITION_CHOICES = [
+    { value: 'new', label: 'New' },
+    { value: 'good', label: 'Good' },
+    { value: 'needs_renovation', label: 'Needs Renovation' },
+  ];
 
   // Modal visibility state
   const [showTypeModal, setShowTypeModal] = useState(false);
@@ -67,8 +87,9 @@ export default function PostAd({ navigation }) {
   const [showRegionModal, setShowRegionModal] = useState(false);
   const [showCityModal, setShowCityModal] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(false);
+  const [showConditionModal, setShowConditionModal] = useState(false);
 
-  // 1️⃣ Check for auth token on mount
+  // Check for auth token on mount
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -84,7 +105,7 @@ export default function PostAd({ navigation }) {
     };
   }, [navigation]);
 
-  // 2️⃣ Load regions, cities & features from backend
+  // Load regions, cities & features
   useEffect(() => {
     let mounted = true;
     const loadLookups = async () => {
@@ -108,7 +129,7 @@ export default function PostAd({ navigation }) {
     };
   }, []);
 
-  // Filter cities array by selected region (both are strings)
+  // Filter cities by selected region
   const citiesForRegion = cities.filter(
     (c) => String(c.region?.id) === region
   );
@@ -119,10 +140,11 @@ export default function PostAd({ navigation }) {
   const selectedRegionLabel = regions.find(r => String(r.id) === region)?.name || 'Select region...';
   const selectedCityLabel = citiesForRegion.find(c => String(c.id) === city)?.city || (region ? 'Select city...' : 'Choose region first');
   const selectedStatusLabel = status || 'Select status...';
+  const selectedConditionLabel = CONDITION_CHOICES.find(c => c.value === condition)?.label || 'Select condition...';
 
-  // 3️⃣ Handle form submission
+  // Handle form submission
   const handleSubmit = async () => {
-    if (!title || !description || !price || !region || !city) {
+    if (!title || !description || !price || !region || !city || !detailedAddress) {
       Alert.alert('Missing fields', 'Please fill out all required fields.');
       return;
     }
@@ -136,10 +158,19 @@ export default function PostAd({ navigation }) {
         number_of_bedrooms: parseInt(bedrooms, 10),
         number_of_bathrooms: parseInt(bathrooms, 10),
         property_type: propertyType,
-        city,                       // sending city ID (string); backend should accept either stringified or numeric
-        detailed_address: description,
+        city,
+        detailed_address: detailedAddress,
         status,
-        features: selectedFeatures, // array of numeric IDs
+        features: selectedFeatures,
+        condition,
+        square_meters: squareMeters ? parseFloat(squareMeters) : null,
+        parking_spaces: parseInt(parkingSpaces, 10) || 0,
+        has_garage: hasGarage,
+        wheelchair_access: wheelchairAccess,
+        elevator: elevator,
+        secure_parking: secureParking,
+        floor_number: floorNumber ? parseInt(floorNumber, 10) : null,
+        year_built: yearBuilt ? parseInt(yearBuilt, 10) : null,
       };
       const res = await api.post('main/properties/', payload);
       const newId = res.data.id;
@@ -158,6 +189,9 @@ export default function PostAd({ navigation }) {
       </View>
     );
   }
+
+  // Toggle boolean field
+  const toggleBoolean = (setter, current) => setter(!current);
 
   return (
     <>
@@ -196,6 +230,19 @@ export default function PostAd({ navigation }) {
                 value={description}
                 onChangeText={setDescription}
                 placeholder="Describe amenities, location, and unique features..."
+                placeholderTextColor="#94a3b8"
+                multiline
+              />
+            </View>
+
+            {/* Detailed Address */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Detailed Address</Text>
+              <TextInput
+                style={[styles.input, styles.textArea]}
+                value={detailedAddress}
+                onChangeText={setDetailedAddress}
+                placeholder="Full address including street, landmark, etc."
                 placeholderTextColor="#94a3b8"
                 multiline
               />
@@ -310,6 +357,141 @@ export default function PostAd({ navigation }) {
                   </View>
                 </View>
               </Modal>
+            </View>
+
+            {/* Row: Condition & Year Built */}
+            <View style={styles.row}>
+              <View style={[styles.inputGroup, styles.half]}>
+                <Text style={styles.label}>Condition</Text>
+                <TouchableOpacity
+                  style={styles.dropdownContainer}
+                  onPress={() => setShowConditionModal(true)}
+                >
+                  <Text style={styles.dropdownText}>{selectedConditionLabel}</Text>
+                </TouchableOpacity>
+                <Modal visible={showConditionModal} transparent animationType="fade">
+                  <View style={styles.modalOverlay}>
+                    <View style={styles.modalContainer}>
+                      <Text style={styles.modalTitle}>Select Condition</Text>
+                      <RNScrollView>
+                        {CONDITION_CHOICES.map((c) => (
+                          <TouchableOpacity
+                            key={c.value}
+                            style={styles.modalItem}
+                            onPress={() => {
+                              setCondition(c.value);
+                              setShowConditionModal(false);
+                            }}
+                          >
+                            <Text style={styles.modalItemText}>{c.label}</Text>
+                          </TouchableOpacity>
+                        ))}
+                        <TouchableOpacity
+                          style={styles.modalCloseBtn}
+                          onPress={() => setShowConditionModal(false)}
+                        >
+                          <Text style={styles.modalCloseText}>Cancel</Text>
+                        </TouchableOpacity>
+                      </RNScrollView>
+                    </View>
+                  </View>
+                </Modal>
+              </View>
+              <View style={[styles.inputGroup, styles.half]}>
+                <Text style={styles.label}>Year Built</Text>
+                <TextInput
+                  style={styles.input}
+                  value={yearBuilt}
+                  onChangeText={setYearBuilt}
+                  placeholder="e.g. 2020"
+                  placeholderTextColor="#94a3b8"
+                  keyboardType="number-pad"
+                  maxLength={4}
+                />
+              </View>
+            </View>
+
+            {/* Row: Square Meters & Parking Spaces */}
+            <View style={styles.row}>
+              <View style={[styles.inputGroup, styles.half]}>
+                <Text style={styles.label}>Area (m²)</Text>
+                <TextInput
+                  style={styles.input}
+                  value={squareMeters}
+                  onChangeText={setSquareMeters}
+                  placeholder="e.g. 120.5"
+                  placeholderTextColor="#94a3b8"
+                  keyboardType="decimal-pad"
+                />
+              </View>
+              <View style={[styles.inputGroup, styles.half]}>
+                <Text style={styles.label}>Parking Spaces</Text>
+                <TextInput
+                  style={styles.input}
+                  value={parkingSpaces}
+                  onChangeText={setParkingSpaces}
+                  keyboardType="number-pad"
+                />
+              </View>
+            </View>
+
+            {/* Facilities Section */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Facilities</Text>
+              <View style={styles.facilitiesContainer}>
+                <View style={styles.facilityRow}>
+                  <TouchableOpacity
+                    style={[styles.facilityButton, hasGarage && styles.facilityActive]}
+                    onPress={() => toggleBoolean(setHasGarage, hasGarage)}
+                  >
+                    <Text style={[styles.facilityText, hasGarage && styles.facilityTextActive]}>
+                      {hasGarage ? '✓ Garage' : 'Garage'}
+                    </Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity
+                    style={[styles.facilityButton, elevator && styles.facilityActive]}
+                    onPress={() => toggleBoolean(setElevator, elevator)}
+                  >
+                    <Text style={[styles.facilityText, elevator && styles.facilityTextActive]}>
+                      {elevator ? '✓ Elevator' : 'Elevator'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+                
+                <View style={styles.facilityRow}>
+                  <TouchableOpacity
+                    style={[styles.facilityButton, wheelchairAccess && styles.facilityActive]}
+                    onPress={() => toggleBoolean(setWheelchairAccess, wheelchairAccess)}
+                  >
+                    <Text style={[styles.facilityText, wheelchairAccess && styles.facilityTextActive]}>
+                      {wheelchairAccess ? '✓ Wheelchair Access' : 'Wheelchair Access'}
+                    </Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity
+                    style={[styles.facilityButton, secureParking && styles.facilityActive]}
+                    onPress={() => toggleBoolean(setSecureParking, secureParking)}
+                  >
+                    <Text style={[styles.facilityText, secureParking && styles.facilityTextActive]}>
+                      {secureParking ? '✓ Secure Parking' : 'Secure Parking'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+
+            {/* Floor Number */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Floor Number</Text>
+              <TextInput
+                style={styles.input}
+                value={floorNumber}
+                onChangeText={setFloorNumber}
+                placeholder="e.g. 3 or -1 for basement"
+                placeholderTextColor="#94a3b8"
+                keyboardType="numbers-and-punctuation"
+              />
             </View>
 
             {/* Features */}
@@ -594,6 +776,39 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '500',
   },
+  // New styles for facilities section
+  facilitiesContainer: {
+    marginTop: 8,
+  },
+  facilityRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 16,
+    marginBottom: 12,
+  },
+  facilityButton: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderRadius: 12,
+    padding: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  facilityActive: {
+    backgroundColor: '#1e3a8a',
+    borderColor: '#1e3a8a',
+  },
+  facilityText: {
+    color: '#64748b',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  facilityTextActive: {
+    color: '#fff',
+  },
+  // Submit button
   submitButton: {
     backgroundColor: '#1e3a8a',
     borderRadius: 12,
@@ -609,6 +824,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  // Modal styles
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',

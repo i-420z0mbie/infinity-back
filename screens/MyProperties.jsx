@@ -71,7 +71,7 @@ function PropertyCard({ property, onPress, onEdit, onDelete }) {
                 ))}
               </ScrollView>
               {property.images.length > 1 && (
-                <>
+                <>  
                   <TouchableOpacity style={[styles.navButton, styles.leftButton]} onPress={goPrev}>
                     <Ionicons name="chevron-back" size={24} color="#fff" />
                   </TouchableOpacity>
@@ -99,10 +99,7 @@ function PropertyCard({ property, onPress, onEdit, onDelete }) {
                 { backgroundColor: property.is_verified ? 'rgba(76, 175, 80, 0.1)' : 'rgba(255, 193, 7, 0.1)' }
               ]}>
                 <View
-                  style={[
-                    styles.statusDot,
-                    { backgroundColor: property.is_verified ? '#4CAF50' : '#FFC107' },
-                  ]}
+                  style={[ styles.statusDot, { backgroundColor: property.is_verified ? '#4CAF50' : '#FFC107' } ]}
                 />
                 <Text style={styles.statusText}>
                   {property.is_verified ? 'Verified' : 'In Review'}
@@ -115,13 +112,18 @@ function PropertyCard({ property, onPress, onEdit, onDelete }) {
                 { marginTop: 4, backgroundColor: 'rgba(94, 124, 255, 0.1)' }
               ]}>
                 <View
-                  style={[
-                    styles.statusDot,
-                    { backgroundColor: property.is_published ? '#4CAF50' : '#FFC107' },
-                  ]}
+                  style={[ styles.statusDot, { backgroundColor: property.is_published ? '#4CAF50' : '#FFC107' } ]}
                 />
                 <Text style={styles.statusText}>
                   {property.is_published ? 'Published' : 'Draft'}
+                </Text>
+              </View>
+              
+              {/* View Count */}
+              <View style={[ styles.statusContainer, { marginTop: 4, backgroundColor: 'rgba(0, 0, 0, 0.05)' } ]}>
+                <Ionicons name="eye-outline" size={14} color="#666" />
+                <Text style={[ styles.statusText, { color: '#666', marginLeft: 4 } ]}>
+                  {property.visit_count} views
                 </Text>
               </View>
             </View>
@@ -233,8 +235,13 @@ export default function MyProperties() {
     }
   };
 
-  const handleViewProperty = (property) => {
-    // Fixed: Use 'id' as the parameter name to match Home.jsx
+  const handleViewProperty = (property) => async () => {
+    // Track visit before navigating
+    try {
+      await api.post(`main/properties/${property.id}/visit/`);
+    } catch (error) {
+      console.error('Error tracking property view:', error);
+    }
     navigation.navigate('Details', { id: property.id });
   };
 
@@ -268,7 +275,7 @@ export default function MyProperties() {
         renderItem={({ item }) => (
           <PropertyCard
             property={item}
-            onPress={() => handleViewProperty(item)}
+            onPress={handleViewProperty(item)}
             onEdit={handleEdit(item)}
             onDelete={handleDelete(item)}
           />
@@ -329,11 +336,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 18,
     overflow: 'hidden',
-    height: CARD_HEIGHT,
+    height: CARD_HEIGHT + 20,
   },
   cardContent: {
     flexDirection: 'row',
-    height: CARD_HEIGHT - 50, // Reserve space for action buttons
+    height: CARD_HEIGHT - 30,
   },
   left: { 
     width: IMAGE_WIDTH, 
@@ -510,15 +517,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     paddingBottom: 15,
-    // backgroundColor: '#fff',
-    // borderBottomWidth: 1,
-    // borderBottomColor: '#f0f0f0',
   },
-  // headerTitle: {
-  //   fontSize: 26,
-  //   fontFamily: 'Inter_700Bold',
-  //   color: '#2d2d2d',
-  // },
+
   homeButton: {
     flexDirection: 'row',
     alignItems: 'center',
