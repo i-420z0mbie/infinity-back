@@ -49,7 +49,7 @@ export function UnreadProvider({ children }) {
           setUnreadCount(c => c + 1);
         }
       } catch (err) {
-        console.error('Unread WS parse error', err);
+        // console.error('Unread WS parse error', err);
       }
     };
 
@@ -59,7 +59,7 @@ export function UnreadProvider({ children }) {
   useEffect(() => {
     fetchCount();
     setupWS();
-    const iv = setInterval(fetchCount, 3000);
+    const iv = setInterval(fetchCount, 45000);
     return () => {
       clearInterval(iv);
       wsRef.current?.close();

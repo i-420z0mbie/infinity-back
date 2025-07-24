@@ -54,7 +54,7 @@ export default function Profile() {
 
   const handleLogout = async () => {
     try {
-      await AsyncStorage.multiRemove([ACCESS_TOKEN, REFRESH_TOKEN]);
+      await AsyncStorage.multiRemove([ACCESS_TOKEN, REFRESH_TOKEN, EMAIL_CONFIRMED]);
       navigation.reset({
         index: 0,
         routes: [{ name: 'Main' }],

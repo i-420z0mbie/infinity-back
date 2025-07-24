@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "50732312521",
+    "project_id": "casazapp-240",
+    "storage_bucket": "casazapp-240.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:50732312521:android:928272c00460a052a02a18",
+        "android_client_info": {
+          "package_name": "com.casaz.naomall"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDXQ53PUX5L-ejPePeIZ8J3R-C-ij0gpw0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

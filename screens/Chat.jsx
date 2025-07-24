@@ -111,7 +111,7 @@ export default function Chat() {
           }
         }
       } catch (e) {
-        console.error('Parse msg error:', e);
+        // console.error('Parse msg error:', e);
       }
     };
   };
@@ -120,7 +120,7 @@ export default function Chat() {
     if (isFocused) {
       fetchMessages();
       setupWebSocket();
-      pollIntervalRef.current = setInterval(fetchMessages, 2000);
+      pollIntervalRef.current = setInterval(fetchMessages, 45000);
     }
     return () => {
       wsRef.current?.close();
@@ -180,7 +180,7 @@ export default function Chat() {
       >
         {!isMe && (
           <Image
-            source={{ uri: item.avatar_url || 'https://example.com/default-avatar.png' }}
+            source={{ uri: item.avatar_url || 'https://www.gravatar.com/avatar/?d=mp&s=200' }}
             style={styles.avatar}
           />
         )}

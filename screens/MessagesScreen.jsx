@@ -89,7 +89,7 @@ export default function MessageListScreen() {
     const socket = new WebSocket(`${WS_BASE_URL}/ws/chat/?token=${token}`);
 
     socket.onopen = () => console.log('WebSocket connected');
-    socket.onerror = e => console.error('WebSocket error:', e.message);
+    // socket.onerror = e => console.error('WebSocket error:', e.message);
     socket.onclose = () => console.log('WebSocket closed');
 
     socket.onmessage = ({ data }) => {
@@ -126,7 +126,7 @@ export default function MessageListScreen() {
           );
         });
       } catch (err) {
-        console.error('WebSocket message parse error:', err);
+        // console.error('WebSocket message parse error:', err);
       }
     };
 
@@ -142,7 +142,7 @@ export default function MessageListScreen() {
       setupWebSocket();
       
       // Setup polling as fallback
-      pollIntervalRef.current = setInterval(fetchThreads, 2000);
+      pollIntervalRef.current = setInterval(fetchThreads, 45000);
     }
 
     return () => {
