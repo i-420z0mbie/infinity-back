@@ -1,25 +1,25 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
-  View, Text, StyleSheet, FlatList,
-  TouchableOpacity, ActivityIndicator, Image
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import api from '../src/api';
-import { ACCESS_TOKEN, WS_BASE_URL } from '../src/constant';
+import { ACCESS_TOKEN } from '../src/constant';
 
-export default function Notifications() {
+export default function NotificationListScreen() {
   const navigation = useNavigation();
   const isFocused = useIsFocused();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
-  const wsRef = useRef(null);
   const pollRef = useRef(null);
 
-  // since api.defaults.baseURL already ends with '/main/',
-  // just use 'notifications/' here:
   const LIST_URL = 'main/notifications/';
 
   const fetchNotifications = async () => {
@@ -29,9 +29,13 @@ export default function Notifications() {
         navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
         return;
       }
-      console.log('GET', api.defaults.baseURL + LIST_URL);
-      const res = await api.get(LIST_URL);
-      setNotifications(res.data);
+
+      setLoading(true);
+      const res = await api.get(LIST_URL, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = res.data || [];
+      setNotifications(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Error fetching notifications:', err);
     } finally {
@@ -39,56 +43,32 @@ export default function Notifications() {
     }
   };
 
-  const setupWebSocket = async () => {
-    const token = await AsyncStorage.getItem(ACCESS_TOKEN);
-    if (!token) return;
-    wsRef.current?.close();
-
-    const ws = new WebSocket(
-      `${WS_BASE_URL.replace(/^http/, 'ws')}/ws/notifications/?token=${token}`
-    );
-    ws.onopen = () => console.log('🚀 WS connected');
-    ws.onerror = e => console.error('WS error:', e.message);
-    ws.onclose = () => console.log('⚡ WS closed');
-    ws.onmessage = ({ data }) => {
-      try {
-        const notif = JSON.parse(data);
-        if (!notif.id) return;
-        setNotifications(prev =>
-          prev.some(n => n.id === notif.id) ? prev : [notif, ...prev]
-        );
-      } catch (e) {
-        console.error('WS parse error:', e);
-      }
-    };
-    wsRef.current = ws;
-  };
-
   useEffect(() => {
     if (isFocused) {
       fetchNotifications();
-      setupWebSocket();
       pollRef.current = setInterval(fetchNotifications, 5000);
     }
-    return () => {
-      wsRef.current?.close();
-      clearInterval(pollRef.current);
-    };
+    return () => clearInterval(pollRef.current);
   }, [isFocused]);
 
   const renderItem = ({ item }) => {
     const time = new Date(item.timestamp).toLocaleTimeString([], {
       hour: '2-digit', minute: '2-digit',
     });
+
     return (
       <TouchableOpacity
         style={[styles.card, !item.is_read && styles.unreadCard]}
         onPress={async () => {
           try {
-            // patch the detail URL with just notifications/{id}/
-            await api.patch(`notifications/${item.id}/`, { is_read: true });
+            await api.patch(
+              `notifications/${item.id}/`,
+              { is_read: true }
+            );
             setNotifications(prev =>
-              prev.map(n => n.id === item.id ? { ...n, is_read: true } : n)
+              prev.map(n =>
+                n.id === item.id ? { ...n, is_read: true } : n
+              )
             );
           } catch (e) {
             console.warn('Mark read error:', e);
@@ -97,25 +77,31 @@ export default function Notifications() {
       >
         <View style={styles.iconContainer}>
           <Icon
-            name={item.notif_type === 'verified'
-              ? 'check-circle-outline' : 'heart-outline'}
+            name={
+              item.notif_type === 'verified'
+                ? 'check-circle-outline'
+                : 'heart-outline'
+            }
             size={32}
-            color={item.notif_type === 'verified'
-              ? '#10b981' : '#ef4444'}
+            color={
+              item.notif_type === 'verified'
+                ? '#10b981'
+                : '#ef4444'
+            }
           />
           {!item.is_read && <View style={styles.unreadBadge} />}
         </View>
         <View style={styles.content}>
           <View style={styles.headerRow}>
-            <Text style={[styles.title, !item.is_read && styles.unreadText]}>
+            <Text style={[styles.title, !item.is_read && styles.unreadText]}> 
               {item.notif_type === 'verified'
                 ? 'Your Property is Verified 🚀'
                 : 'Added to Favorites'}
             </Text>
             <Text style={styles.time}>{time}</Text>
           </View>
-          <Text style={[styles.subtitle, !item.is_read && styles.unreadText]}>
-            {item.object_data.title}
+          <Text style={[styles.subtitle, !item.is_read && styles.unreadText]}> 
+            {item.object_data?.title}
           </Text>
         </View>
       </TouchableOpacity>
@@ -131,28 +117,16 @@ export default function Notifications() {
   }
 
   return (
-    <>
-      <StatusBar style="dark" />
-      <View style={styles.container}>
-        {notifications.length > 0 ? (
-          <FlatList
-            data={notifications}
-            keyExtractor={item => item.id}
-            renderItem={renderItem}
-            contentContainerStyle={styles.listContent}
-            showsVerticalScrollIndicator={false}
-          />
-        ) : (
-          <View style={styles.emptyContainer}>
-            <Image
-              source={require('../assets/notification.png')}
-              style={styles.emptyImage}
-            />
-            <Text style={styles.emptyText}>You have no notifications</Text>
-          </View>
-        )}
-      </View>
-    </>
+    <View style={styles.container}>
+      {/* <Text style={styles.headerTitle}>Notifications</Text> */}
+      <FlatList
+        data={notifications}
+        keyExtractor={item => String(item.id)}
+        renderItem={renderItem}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+      />
+    </View>
   );
 }
 

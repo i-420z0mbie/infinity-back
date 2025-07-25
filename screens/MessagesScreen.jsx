@@ -13,7 +13,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import api from '../src/api';
-import { ACCESS_TOKEN, WS_BASE_URL } from '../src/constant';
+import { ACCESS_TOKEN } from '../src/constant';
 
 export default function MessageListScreen() {
   const navigation = useNavigation();
@@ -21,7 +21,6 @@ export default function MessageListScreen() {
   const [threads, setThreads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState(null);
-  const wsRef = useRef(null);
   const pollIntervalRef = useRef(null);
 
   const fetchThreads = async () => {
@@ -32,8 +31,10 @@ export default function MessageListScreen() {
         return;
       }
 
-      const res = await api.get('main/messages/');
-      const { current_user, messages = [] } = res.data;
+      const res = await api.get('main/messages/', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const { current_user, messages = [] } = res.data || {};
 
       if (!current_user) {
         navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
@@ -47,15 +48,20 @@ export default function MessageListScreen() {
       messages.forEach(msg => {
         const senderStr = String(msg.sender);
         const recipientStr = String(msg.recipient);
-        const other = senderStr === recipientStr ? null : 
-          senderStr === currentUserStr ? recipientStr : senderStr;
+        const other = senderStr === recipientStr
+          ? null
+          : senderStr === currentUserStr
+            ? recipientStr
+            : senderStr;
         const userId = other || recipientStr;
         const isSentByCurrentUser = senderStr === currentUserStr;
 
         if (!map[userId] || new Date(msg.timestamp) > new Date(map[userId].timestamp)) {
           map[userId] = {
             userId,
-            username: isSentByCurrentUser ? msg.recipient_username : msg.sender_username,
+            username: isSentByCurrentUser
+              ? msg.recipient_username
+              : msg.sender_username,
             preview: msg.content,
             timestamp: msg.timestamp,
             unread: isSentByCurrentUser ? false : !msg.is_read,
@@ -77,82 +83,14 @@ export default function MessageListScreen() {
     }
   };
 
-  const setupWebSocket = async () => {
-    const token = await AsyncStorage.getItem(ACCESS_TOKEN);
-    if (!token) return;
-
-    // Close existing connection if any
-    if (wsRef.current) {
-      wsRef.current.close();
-    }
-
-    const socket = new WebSocket(`${WS_BASE_URL}/ws/chat/?token=${token}`);
-
-    socket.onopen = () => console.log('WebSocket connected');
-    // socket.onerror = e => console.error('WebSocket error:', e.message);
-    socket.onclose = () => console.log('WebSocket closed');
-
-    socket.onmessage = ({ data }) => {
-      try {
-        const { message } = JSON.parse(data);
-        const senderStr = String(message.sender);
-        const currentUserStr = String(currentUserId);
-        const isSentByCurrentUser = senderStr === currentUserStr;
-
-        setThreads(prev => {
-          const idx = prev.findIndex(t => String(t.userId) === senderStr);
-          const entry = {
-            userId: senderStr,
-            username: message.sender_username,
-            preview: message.content,
-            timestamp: message.timestamp,
-            unread: isSentByCurrentUser ? false : !message.is_read,
-            avatar: message.avatar_url || null,
-            isSentByCurrentUser,
-            isReadByRecipient: isSentByCurrentUser ? message.is_read : undefined,
-          };
-
-          let updated;
-          if (idx >= 0) {
-            updated = [...prev];
-            updated.splice(idx, 1);
-            updated.unshift(entry);
-          } else {
-            updated = [entry, ...prev];
-          }
-
-          return updated.sort(
-            (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
-          );
-        });
-      } catch (err) {
-        // console.error('WebSocket message parse error:', err);
-      }
-    };
-
-    wsRef.current = socket;
-  };
-
   useEffect(() => {
     if (isFocused) {
-      // Initial fetch
+      setLoading(true);
       fetchThreads();
-      
-      // Setup WebSocket
-      setupWebSocket();
-      
-      // Setup polling as fallback
       pollIntervalRef.current = setInterval(fetchThreads, 45000);
     }
-
     return () => {
-      // Cleanup on unmount
-      if (wsRef.current) {
-        wsRef.current.close();
-      }
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current);
-      }
+      clearInterval(pollIntervalRef.current);
     };
   }, [isFocused]);
 
@@ -161,7 +99,7 @@ export default function MessageListScreen() {
       hour: '2-digit',
       minute: '2-digit',
     });
-    
+
     return (
       <TouchableOpacity
         style={[styles.card, item.unread && styles.unreadCard]}
@@ -173,7 +111,7 @@ export default function MessageListScreen() {
           });
         }}
       >
-        <View style={[styles.avatarContainer, item.unread && styles.unreadAvatar]}>
+        <View style={[styles.avatarContainer, item.unread && styles.unreadAvatar]}> 
           {item.avatar ? (
             <Image source={{ uri: item.avatar }} style={styles.avatar} />
           ) : (
@@ -184,13 +122,13 @@ export default function MessageListScreen() {
 
         <View style={styles.content}>
           <View style={styles.headerRow}>
-            <Text style={[styles.username, item.unread && styles.unreadText]}>
+            <Text style={[styles.username, item.unread && styles.unreadText]}> 
               {item.username}
             </Text>
             <Text style={styles.time}>{time}</Text>
           </View>
           <View style={styles.previewRow}>
-            <Text 
+            <Text
               style={[styles.preview, item.unread && styles.unreadText]}
               numberOfLines={2}
             >
@@ -198,9 +136,9 @@ export default function MessageListScreen() {
             </Text>
             {item.isSentByCurrentUser && (
               <Icon
-                name={item.isReadByRecipient ? "check-all" : "check"}
+                name={item.isReadByRecipient ? 'check-all' : 'check'}
                 size={16}
-                color={item.isReadByRecipient ? "#6366f1" : "#94a3b8"}
+                color={item.isReadByRecipient ? '#6366f1' : '#94a3b8'}
                 style={styles.statusIcon}
               />
             )}
@@ -224,7 +162,7 @@ export default function MessageListScreen() {
 
   return (
     <>
-    <StatusBar style="dark" />
+      <StatusBar style="dark" />
       <View style={styles.container}>
         <Text style={styles.headerTitle}>Messages</Text>
         <FlatList

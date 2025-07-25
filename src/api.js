@@ -4,7 +4,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ACCESS_TOKEN, REFRESH_TOKEN } from "./constant";
 
 
-const BASE_URL = 'http://192.168.157.75:8000/';
+const BASE_URL = 'https://casazmain.naomall.com/';
 
 // Create API instance
 const api = axios.create({

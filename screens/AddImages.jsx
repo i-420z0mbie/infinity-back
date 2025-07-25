@@ -26,11 +26,11 @@ export default function AddImages({ route }) {
   const [uploading, setUploading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(null);
 
-  const LISTING_FEE = 30; // GH₵30 per listing
+  const LISTING_FEE = 30; 
 
-  // Navigate back to "Main" after upload by popping to initial route
+
    function onUploadComplete() {
-  // instead of resetting to MyProperties alone, navigate into the Profile tab
+
   navigation.navigate('Main', {
     screen: 'Profile',
     params: { screen: 'MyProperties' },

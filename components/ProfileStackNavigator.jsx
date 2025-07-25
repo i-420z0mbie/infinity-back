@@ -65,7 +65,7 @@ export default function ProfileStackNavigator() {
         name="MySubscriptions"
         component={MySubscriptions}
         options={{
-          headerShown: true,
+          headerShown: false,
           headerTitle: 'My Subscriptions',
         }}
       />

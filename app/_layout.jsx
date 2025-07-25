@@ -19,7 +19,6 @@ import * as Font from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
-import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AntDesign } from '@expo/vector-icons';
@@ -48,13 +47,13 @@ import { ACCESS_TOKEN } from '../src/constant';
 const { width } = Dimensions.get('window');
 const Stack = createStackNavigator();
 
-// Create a navigation ref so we can navigate outside components
+
 export const navigationRef = createRef();
 
-// Prevent native splash from auto-hiding
+
 SplashScreen.preventAutoHideAsync();
 
-// Configure how notifications are shown when the app is foregrounded
+
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -64,10 +63,10 @@ Notifications.setNotificationHandler({
 });
 
 export default function RootLayout() {
-  // Track app state
+
   const appStateRef = useRef(AppState.currentState);
 
-  // Force nav‑bar color on Android
+
   useEffect(() => {
     if (Platform.OS === 'android') {
       NavigationBar.setBackgroundColorAsync('#1c1c1e');
@@ -88,7 +87,26 @@ export default function RootLayout() {
   const rotateAnim = useRef(new Animated.Value(0)).current;
   const [expoPushToken, setExpoPushToken] = useState(null);
 
-  // Register for push and listen to notifications
+
+
+  async function ensureNotificationChannel() {
+    if (Platform.OS === 'android') {
+      await Notifications.setNotificationChannelAsync('default', {
+        name: 'Default',
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#FF231F7C',
+        sound: 'notificationsound.wav',    
+      });
+    }
+  }
+
+
+  useEffect(() => {
+    ensureNotificationChannel();
+  }, []);
+
+
   useEffect(() => {
     let responseListener;
     const registerForPushNotifications = async () => {
@@ -147,7 +165,9 @@ export default function RootLayout() {
     };
   }, []);
 
-  // Load fonts and fetch initial data
+  
+
+
   useEffect(() => {
     async function prepare() {
       try {
@@ -245,7 +265,6 @@ export default function RootLayout() {
         </View>
       ) : (
         <DataContext.Provider value={{ data, setData }}>
-          {/* <NavigationContainer ref={navigationRef}> */}
             <Stack.Navigator initialRouteName="Main" screenOptions={{ headerShown: false }}>
               <Stack.Screen name="Main" component={TabNavigator} />
               <Stack.Screen name="Home" component={Home} />
@@ -257,7 +276,6 @@ export default function RootLayout() {
               <Stack.Screen name="Chat" component={Chat} />
               <Stack.Screen name="PostAd" component={PostAd} />
 
-              {/* Global subscription screens */}
               <Stack.Screen
                 name="SubscriptionPlans"
                 component={SubscriptionPlans}
@@ -276,7 +294,7 @@ export default function RootLayout() {
               <Stack.Screen
                 name="MySubscriptions"
                 component={MySubscriptions}
-                options={{ headerShown: true, title: 'My Subscriptions' }}
+                options={{ headerShown: false, title: 'My Subscriptions' }}
               />
               <Stack.Screen
                 name="MyProperties"
@@ -289,7 +307,7 @@ export default function RootLayout() {
                 options={{ headerShown: true, title: 'Edit Properties' }}
               />
             </Stack.Navigator>
-          {/* </NavigationContainer> */}
+
         </DataContext.Provider>
       )}
     </View>

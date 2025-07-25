@@ -1,4 +1,3 @@
-// screens/Chat.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -19,7 +18,7 @@ import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation, useRoute, useIsFocused } from '@react-navigation/native';
 import api from '../src/api';
-import { ACCESS_TOKEN, WS_BASE_URL } from '../src/constant';
+import { ACCESS_TOKEN } from '../src/constant';
 
 export default function Chat() {
   const route = useRoute();
@@ -33,7 +32,6 @@ export default function Chat() {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState(initialMessage);
   const [loading, setLoading] = useState(true);
-  const wsRef = useRef(null);
   const pollIntervalRef = useRef(null);
   const flatListRef = useRef(null);
 
@@ -44,12 +42,22 @@ export default function Chat() {
         `main/messages/?user_id=${userId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      const fetched = res.data.messages?.reverse() || [];
+      const data = res?.data || {};
+      const fetched = Array.isArray(data.messages) ? data.messages.reverse() : [];
       setMessages(fetched);
       markMessagesAsRead(fetched);
     } catch (err) {
+      // Handle server errors gracefully
       console.error('Fetch error:', err);
-      Alert.alert('Error', 'Could not load messages.');
+      if (!messages.length) {
+        // Only alert if no previous messages
+        Alert.alert(
+          'Error',
+          err.response?.status === 500
+            ? 'Server error while loading messages.'
+            : 'Could not load messages.'
+        );
+      }
     } finally {
       setLoading(false);
     }
@@ -57,7 +65,7 @@ export default function Chat() {
 
   const markMessagesAsRead = async (msgs) => {
     const unread = msgs.filter(
-      (m) => m.sender.toString() === userId && !m.is_read
+      (m) => m.sender?.toString() === userId && !m.is_read
     );
     if (!unread.length) return;
     try {
@@ -69,7 +77,7 @@ export default function Chat() {
       );
       setMessages((prev) =>
         prev.map((m) =>
-          m.sender.toString() === userId ? { ...m, is_read: true } : m
+          m.sender?.toString() === userId ? { ...m, is_read: true } : m
         )
       );
     } catch (err) {
@@ -77,53 +85,13 @@ export default function Chat() {
     }
   };
 
-  const setupWebSocket = async () => {
-    const token = await AsyncStorage.getItem(ACCESS_TOKEN);
-    if (wsRef.current) wsRef.current.close();
-    const socket = new WebSocket(`${WS_BASE_URL}/ws/chat/?token=${token}`);
-    wsRef.current = socket;
-    socket.onmessage = ({ data }) => {
-      try {
-        const { message, type } = JSON.parse(data);
-        if (type === 'message_read') {
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.sender.toString() === userId ? { ...m, is_read: true } : m
-            )
-          );
-          return;
-        }
-        if (
-          message.sender.toString() === userId ||
-          message.recipient.toString() === userId
-        ) {
-          setMessages((prev) => {
-            const idx = prev.findIndex((m) => m.id === message.id);
-            if (idx > -1) {
-              const copy = [...prev];
-              copy[idx] = message;
-              return copy;
-            }
-            return [message, ...prev];
-          });
-          if (message.sender.toString() === userId) {
-            markMessagesAsRead([message]);
-          }
-        }
-      } catch (e) {
-        // console.error('Parse msg error:', e);
-      }
-    };
-  };
-
   useEffect(() => {
     if (isFocused) {
+      setLoading(true);
       fetchMessages();
-      setupWebSocket();
       pollIntervalRef.current = setInterval(fetchMessages, 45000);
     }
     return () => {
-      wsRef.current?.close();
       clearInterval(pollIntervalRef.current);
     };
   }, [isFocused, userId]);
@@ -146,38 +114,25 @@ export default function Chat() {
     setNewMessage('');
     try {
       const token = await AsyncStorage.getItem(ACCESS_TOKEN);
-      const res = await api.post(
+      await api.post(
         `main/messages/?user_id=${userId}`,
         { content: text },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      setMessages((prev) =>
-        prev.map((m) => (m.id === tempId ? { ...res.data, is_read: false } : m))
-      );
-      if (wsRef.current?.readyState === WebSocket.OPEN) {
-        wsRef.current.send(
-          JSON.stringify({ type: 'new_message', message: res.data })
-        );
-      }
+      fetchMessages();
     } catch (err) {
       console.error('Send error:', err);
-      Alert.alert('Send Failed', err.message);
+      Alert.alert('Send Failed', err.message || 'Unable to send message.');
     }
   };
 
   const renderMessage = ({ item }) => {
-    const isMe = item.sender.toString() === currentUserId;
-    const time = new Date(item.timestamp).toLocaleTimeString([], {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    const isMe = item.sender?.toString() === currentUserId;
+    const time = item.timestamp
+      ? new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      : '';
     return (
-      <View
-        style={[
-          styles.row,
-          isMe ? styles.rowRight : styles.rowLeft,
-        ]}
-      >
+      <View style={[styles.row, isMe ? styles.rowRight : styles.rowLeft]}>
         {!isMe && (
           <Image
             source={{ uri: item.avatar_url || 'https://www.gravatar.com/avatar/?d=mp&s=200' }}
@@ -194,15 +149,13 @@ export default function Chat() {
             {item.content}
           </Text>
           <View style={styles.messageFooter}>
-            <Text style={[styles.time, isMe ? styles.timeLight : styles.timeDark]}>
-              {time}
-            </Text>
+            <Text style={[styles.time, isMe ? styles.timeLight : styles.timeDark]}> {time} </Text>
             {isMe && (
               <Icon
                 name={item.is_read ? 'check-all' : 'check'}
                 size={12}
-                color={isMe ? (item.is_read ? '#d6bcfa' : '#e2e8f0') : '#475569'}
                 style={styles.statusIcon}
+                color={item.is_read ? '#d6bcfa' : '#e2e8f0'}
               />
             )}
           </View>
@@ -231,7 +184,6 @@ export default function Chat() {
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
